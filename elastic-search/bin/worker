@@ -1,0 +1,22 @@
+#!/usr/bin/env node
+require( '../../env.js' )();
+var debug = require( 'debug' )( 'worker' );
+
+var throng = require( 'throng' );
+var firebase = require( 'firebase' );
+
+var Queues = require( '../src/firebase-queues.js' );
+
+var firebaseProject = process.env.FIREBASE_PROJECT;
+var firebaseServiceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+
+var concurrency = process.env.WORKER_CONCURRENCY || 1;
+
+var app = firebase.initializeApp({
+  serviceAccount: firebaseServiceAccount,
+  databaseURL: "https://" + firebaseProject + ".firebaseio.com",
+});
+
+function start () { return Queues( app ) }
+
+throng( start, { workers: concurrency } )
