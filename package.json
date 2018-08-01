@@ -1,6 +1,6 @@
 {
   "name": "webhook-cms-pull",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Pull data from external sources into a Webhook CMS Firebase.",
   "main": "sync.js",
   "scripts": {
