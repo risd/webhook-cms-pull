@@ -1,5 +1,6 @@
 var fs = require('fs');
 
+var debug = require( 'debug' )( 'report' );
 var knox = require('knox');
 var template = require('html-template');
 var moment = require('moment');
@@ -16,11 +17,18 @@ module.exports = Report;
  * on S3 that is based on the sync process having
  * run, and updating the Firebase node.
  * 
- * @param {Function}
+ * @param {object} options
+ * @param {string} options.awsBucket  The bucket to publish to
+ * @param {string} options.awsRegion  The aws region that the bucket is in
+ * @param {string} options.firebasePath  The relative path on firebase to store sync report data
+ * @param {string} options.awsKey  The aws key to use to store the bucket report.
+ * @param {string} options.awsSecret  The aws secret to use to store the bucket report.
  */
-function Report () {
-    if (!(this instanceof Report)) return new Report();
+function Report ( options ) {
+    if (!(this instanceof Report)) return new Report( options );
+    if ( ! options ) options = {}
     var self = this;
+    this._options = options;
     this.html = template();
     this.sources = this.html.template('source');
     this.templateStream = function () {
@@ -38,7 +46,7 @@ function Report () {
  */
 Report.prototype.config = function () {
 	var self = this;
-	var pathOnFirebase = 'eduSyncReport';
+	var pathOnFirebase = this._options.firebasePath || 'syncReport';
 	// setup s3
 	return through.obj(function (fb, enc, next) {
 		var stream = this;
@@ -85,10 +93,22 @@ Report.prototype.config = function () {
  */
 Report.prototype.update = function () {
 	var self = this;
+  var awsKey = this._options.awsKey;
+  var awsSecret = this._options.awsSecret;
+  var bucket = this._options.awsBucket;
+  var region = this._options.awsRegion;
 
 	return through.obj(processSource);
 
 	function processSource (source, enc, next) {
+    if (!bucket) {
+      var noBucketError = new Error( 'Could not write report, no bucket defined.' )
+      source.errors.push( noBucketError )
+      return next(null, source)
+    }
+
+    debug( 'update:process-source' )
+
     var nowOnEastCoast = timezone().tz('America/New_York');
 	  var date = moment(nowOnEastCoast).format('MMMM Do YYYY, h:mm:ss a');
 
@@ -189,9 +209,14 @@ Report.prototype.update = function () {
 				return b.sortDate - a.sortDate;
 			});
 
-		self.templateStream()
-			.pipe(self.html)
-			.pipe(through(capture, push));
+		var writeStream = combine(
+      self.templateStream(),
+			self.html,
+			through(capture, push));
+
+    writeStream.on('error', function (error) {
+      console.log( error )
+    })
 
 		sortedToWrite.forEach(function (entry) {
 			self.sources.write({
@@ -208,8 +233,8 @@ Report.prototype.update = function () {
 			subnext();
 		}
 		function push () {
-			next(null, htmlToWrite);
-			this.push(null);
+      this.push(null);
+      next(null, htmlToWrite);
 		}
 	}
 
@@ -217,9 +242,10 @@ Report.prototype.update = function () {
 		var stream = this;
 
 		var client = knox.createClient({
-			key: process.env.AWS_KEY,
-			secret: process.env.AWS_SECRET,
-			bucket: 'edu-data-sync-report'
+			key: awsKey,
+			secret: awsSecret,
+      bucket: bucket,
+			region: region,
 		});
 
 		var req = client.put('/index.html', {
