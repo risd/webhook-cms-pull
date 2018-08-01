@@ -8,6 +8,7 @@ var extend = require('xtend');
 var from = require('from2-array');
 var through = require('through2');
 var combine = require('stream-combiner2');
+var whRequiredFields = require( './util/wh-required-fields.js' )
 
 module.exports = SyncProtocol;
 
@@ -291,7 +292,7 @@ function addSourceToWebhook () {
 
         var value =
             self.updateWebhookValueWithSourceValue(
-                row.webhook,
+                whRequiredFields(row.webhook),
                 row.source);
 
         ref.set(value, onComplete);
