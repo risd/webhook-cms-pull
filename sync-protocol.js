@@ -4,7 +4,6 @@
 
 var debug = require('debug')('sync-protocol');
 var clone = require('clone');
-var extend = require('xtend');
 var from = require('from2-array');
 var through = require('through2');
 var combine = require('stream-combiner2');
@@ -256,7 +255,7 @@ function addSourceToWebhook () {
                 return next();
             }
             // else if (typeof self.secondaryKeyComparison === 'function') {
-            //     var secondaryComparison = extend({}, row, { webhook: whItem.data, whKey: whItem.key });
+            //     var secondaryComparison = clone({}, row, { webhook: whItem.data, whKey: whItem.key });
             //     self.secondaryKeyComparison(secondaryComparison, compareResult)
             //     function compareResult (error, secondaryKeyMatch) {
             //         if (secondaryKeyMatch) {
