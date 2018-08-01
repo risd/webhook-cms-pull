@@ -40,34 +40,22 @@ function Sync ( options, callback ) {
     throw new Error( 'An options object must be passed in. Including a `sourcePrototype` & `syncNode` string.' )
   }
 
-  // × make option, { env }
-  // var Env = require('./env.js')();
-  // var envConf = Env.asObject();
   var envConf = options.env;
+  var syncNode = options.syncNode || 'sync';
 
-  // × part of the `webhook-cms-pull` module
   var Firebaseref = require('./firebaseref.js');
 
-  // make option, { sourcePrototype }
   var sourcePrototype = options.sourcePrototype;
   if ( ! sourcePrototype ) {
     throw new Error( 'Sync requires a source prototype object to extend with the sync protocol.' );
   }
   var sourcePrototypes = [ sourcePrototype ];
 
-  // part of `webhook-cms-pull` module
-  // - update to signal the server for batch sync, rather than individual
   var ElasticSearch = require('./elastic-search/stream-interface.js')( envConf.elasticSearch );
-  // part of `webhook-cms-pull` module
   var SignalBuild = require( './signal/build.js' ).stream();
-  // part of `webhook-cms-pull` module
-  // - update to be based on env purely
-  var Report = require('./report/index.js')();
+  var Report = require('./report/index.js')( envConf.report );
 
-  throw new Error( 'Report bucket & content should be based on env.' )
-
-  // make option, { syncNodeName }
-  var syncRoot = timestampWithPrefix('eduSync');
+  var syncRoot = timestampWithPrefix( syncNode );
 
   // Pass firebase ref into objects
   Firebaseref( envConf.firebase )
