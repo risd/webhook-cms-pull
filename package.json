@@ -7,6 +7,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "preinstall": "cd elastic-search && npm install"
   },
+  "engines": {
+    "node": "4.8.x",
+    "npm": "2.15.x"
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -19,6 +23,7 @@
     "moment-timezone": "^0.4.0",
     "pump": "^3.0.0",
     "run-parallel-limit": "^1.0.5",
+    "stream-combiner2": "^1.1.1",
     "through2": "^2.0.3"
   }
 }
