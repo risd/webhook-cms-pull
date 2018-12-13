@@ -1,6 +1,9 @@
 var debug = require('debug')('firebaseref');
+var admin = require('firebase-admin');
 var from = require('from2-array');
 var through = require('through2');
+
+var firebaseEscape = require( './util/firebase-escape.js' )
 
 module.exports = FirebaseRef;
 
@@ -13,132 +16,55 @@ module.exports = FirebaseRef;
  *
  * @param {object} options
  * @param {string} options.firebaseName  The name of the firebase
- * @param {string} options.firebaseKey   The key of the firebase
+ * @param {string} options.firebaseServiceAccountKey   The key of the firebase
  * @param {string} options.siteName      The site instance
  * @param {string} options.siteKey       The key for the site
- * @returns {Stream} firebaseRef
+ * @param {function?} callback           Optional function to pass the firebaseRef to.
+ * @returns {Stream} stream              If no callback is passed, a stream is created to push the firebaseRef to.
  */
 
 function FirebaseRef ( options, callback ) {
-  if ( !options ) options = {}
 
-  return from.obj([ options, null])
-             .pipe(FirebaseToken())
-             .pipe(FirebaseAuth())
-             .pipe(FirebaseBucketForSite())
-             .pipe(PushRef( callback ));
+  var firebaseName = options.firebaseName
+  var firebaseServiceAccountKey = options.firebaseServiceAccountKey
+  var initializationName = options.initializationName || '[DEFAULT]'
+  var siteName = firebaseEscape( options.siteName )
+  var siteKey = options.siteKey
 
-  /**
-   * @param {object} options
-   * @param {object} options.email
-   * @param {object} options.password
-   * @param {object} options.firebase
-   */
-  function FirebaseToken () {
-      if ( !options ) options = {};
-      var request = require('request');
-      var authUrl = 'https://auth.firebase.com/auth/firebase';
-
-
-      return through.obj(createToken);
-
-      function createToken (row, enc, next) {
-          var self = this;
-          var qs = options;
-
-          debug('token:request');
-
-          request(
-              authUrl,
-              { qs: options },
-              function (err, res, body) {
-                  var data = JSON.parse(body);
-                  debug('token:reseponse:', JSON.stringify(data));
-                  self.push( data );
-                  next();
-              });
-      }
+  var app = appForName( initializationName )
+  if ( ! app ) {
+    app = admin.initializeApp( {
+      databaseURL: 'https://' + firebaseName + '.firebaseio.com',
+      credential: firebaseServiceAccountKey,
+    } , initializationName )
   }
 
-  /**
-   * @param {object} options
-   * @param {object} options.firebase
-   */
-  function FirebaseAuth () {
-      if ( !options ) options = {}
+  var firebaseRef = app.database()
+    .ref( 'buckets' )
+    .child( siteName )
+    .child( siteKey )
+    .child( 'dev' )
 
-      var Firebase = require('firebase');
-      var dbName = options.firebaseName;
-      var dbKey = options.firebaseKey;
-
-      return through.obj(auth);
-
-      function auth (row, enc, next) {
-          var self = this;
-          var firebase = new Firebase(
-                              'https://' +
-                              dbName +
-                              '.firebaseio.com/');
-          debug('auth:token', dbKey);
-          firebase
-              .auth(
-                  dbKey,
-                  function (error, auth) {
-                      if (error) {
-                          console.log(error);
-                      } else {
-                          self.push({
-                              firebaseRoot: firebase
-                          });
-                      }
-                      next();
-                  });
-      }
+  if ( typeof callback === 'function' ) {
+    return callback( null, firebaseRef )
   }
 
-  /**
-   * @param {object} options
-   * @param {string} options.siteName  The site instance
-   * @param {string} options.siteKey   The site key
-   */
-  function FirebaseBucketForSite () {
-      var fs = require('fs');
-      return through.obj(conf);
+  var stream = throuhg.obj()
 
-      function conf (row, enc, next) {
-          row.firebase =
-                  row.firebaseRoot
-                     .child(
-                          'buckets/' +
-                          options.siteName +
-                          '/' +
-                          options.siteKey +
-                          '/dev');
+  process.nextTick( function pushRef () {
+    stream.push( firebaseRef )
+    stream.push( null )
+  } )
 
-          this.push(row);
-          next();
-      }
+  return stream;
+
+  function appForName ( name ) {
+    var appOfNameList = admin.apps.filter( appOfName )
+    if ( appOfNameList.length === 1 ) return appOfNameList[ 0 ]
+    return null
+
+    function appOfName ( app ) {
+      return app.name === name
+    }
   }
-
-  function PushRef ( callback ) {
-      var firebaseRef;
-      return through.obj(ref, end);
-
-      function ref (row, enc, next) {
-          if ( typeof callback !== 'function' ) {
-            this.push(row.firebase);
-          }
-          else {
-            firebaseRef = row.firebase;
-          }
-          next();
-      }
-
-      function end () {
-        if ( typeof callback === 'function' ) {
-          callback( null, firebaseRef )
-        }
-      }
-  }
-
 }
