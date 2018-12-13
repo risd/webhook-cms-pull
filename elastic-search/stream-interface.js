@@ -73,6 +73,7 @@ function ElasticSearchSync ( options ) {
         if ( error ) return retry( error )
         if ( data && data.error ) return retry( data.error )
         debug( 'addIndex:response' )
+        debug( data )
         callback( null, data )
       } )
 

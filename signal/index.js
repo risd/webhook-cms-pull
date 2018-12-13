@@ -1,6 +1,8 @@
 var debug = require( 'debug' )( 'signal' )
 var assert = require( 'assert' )
 
+var firebaseEscape = require( '../util/firebase-escape.js' )
+
 module.exports = Signal;
 
 function Signal( type ) {
@@ -11,22 +13,24 @@ function Signal( type ) {
   
   return function SendSignal ( options, callback ) {
     if ( ! ( this instanceof SendSignal ) ) return new SendSignal( options, callback )
-    assert( typeof options === 'object', 'Options object is required to send signal. Including a .firebase Firebase instance, and .payload.siteName string.' )
+    assert( typeof options === 'object', 'Options object is required to send signal. Including a .firebase Firebase instance, and .payload.sitename string.' )
     assert( typeof options.firebase === 'object', 'options.firebase must be a Firebase instance.' )
-    assert( typeof options.payload === 'object', 'options.payload must be an object with .siteName string.' )
-    assert( typeof options.payload.sitename === 'string', 'options.payload must be an object with .siteName string.' )
+    assert( typeof options.payload === 'object', 'options.payload must be an object with .sitename string.' )
+    assert( typeof options.payload.sitename === 'string', 'options.payload must be an object with .sitename string.' )
 
     debug( 'send' )
     debug( signalType )
 
     try {
-      var buildCommandReference = options.firebase.root().child( 'management/commands/' + signalType )
+      var commandReference = options.firebase.root.child( 'management/commands/' + signalType )
 
       var payload = Object.assign( {
         id: uniqueId(),
       }, options.payload )
 
-      buildCommandReference.child( payload.sitename ).set( payload, function ( error ) {
+      payload.sitename = firebaseEscape( payload.sitename )
+
+      commandReference.child( payload.sitename ).set( payload, function ( error ) {
         debug( 'send:done' )
         debug( error )
 

@@ -43,6 +43,7 @@ function Sync ( options, callback ) {
   var envConf = options.env;
   var syncNode = options.syncNode || 'sync';
 
+  // this doesn't have to be a stream, but could be.
   var Firebaseref = require('./firebaseref.js');
 
   var sourcePrototype = options.sourcePrototype;
@@ -53,6 +54,7 @@ function Sync ( options, callback ) {
 
   var ElasticSearch = require('./elastic-search/stream-interface.js')( envConf.elasticSearch );
   var SignalBuild = require( './signal/build.js' ).stream();
+  var SignalReindex = require( './signal/elastic-reindex.js' ).stream();
   var Report = require('./report/index.js')( envConf.report );
 
   var syncRoot = timestampWithPrefix( syncNode );
@@ -63,6 +65,7 @@ function Sync ( options, callback ) {
     // > Writes a firebase ref
     .pipe(AddSyncNodeToFirebase(syncRoot))
     .pipe(SignalBuild.config())
+    .pipe(SignalReindex.config())
     .pipe(Report.config())
     // < Reads a firebase ref
     // > Writes individual SyncSources with sync protocol applied
@@ -76,6 +79,7 @@ function Sync ( options, callback ) {
     .pipe(ResolveReverseRelationships())
     .pipe(Report.update())
     .pipe(SignalBuild.send( envConf.signal ))
+    .pipe(SignalReindex.send( envConf.signal ))
     // < Reads SyncSources
     // > Writes nothing
     .pipe(Exit( callback ));
