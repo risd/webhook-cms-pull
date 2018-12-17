@@ -14,11 +14,6 @@ module.exports = Sync;
  * @param {object}   options.sourcePrototype  The pull source object to be extended with the sync protocol
  * @param {object}   options.syncNode  The name of the node to use when syncing sources
  * @param {object}   options.env  The object that contains environment configuration
- * @param {object}   options.env.elasticSearch  Elastic Search options
- * @param {string}   options.env.elasticSearch.server  Elastic Search server
- * @param {string}   options.env.elasticSearch.user  Elastic Search user
- * @param {string}   options.env.elasticSearch.password  Elastic Search password
- * @param {string}   options.env.elasticSearch.siteName  Webhook site name
  * @param {object}   options.env.firebase  The Firebase environment configuration
  * @param {string}   options.env.firebase.firebaseName  Firebase database name
  * @param {string}   options.env.firebase.firebaseKey  Firebase database API key
@@ -52,7 +47,6 @@ function Sync ( options, callback ) {
   }
   var sourcePrototypes = [ sourcePrototype ];
 
-  var ElasticSearch = require('./elastic-search/stream-interface.js')( envConf.elasticSearch );
   var SignalBuild = require( './signal/build.js' ).stream();
   var SignalReindex = require( './signal/elastic-reindex.js' ).stream();
   var Report = require('./report/index.js')( envConf.report );
@@ -234,7 +228,6 @@ function Sync ( options, callback ) {
         pump(
           source.listFirebaseSource(),
           source.addSourceToWebhook(),
-          source.addToSearchIndex(ElasticSearch.addIndex),
           Sink(),
           end);
       }
@@ -278,7 +271,6 @@ function Sync ( options, callback ) {
           source.listFirebaseWebhook(),
           source.addInSourceBool(),
           source.updateWebhookValueNotInSource(),
-          source.removeFromSearchIndex(ElasticSearch.deleteIndex),
           Sink(),
           end);
       }
