@@ -4,8 +4,7 @@
   "description": "Pull data from external sources into a Webhook CMS Firebase.",
   "main": "sync.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "preinstall": "cd elastic-search && npm install"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {
     "node": "4.8.x",
