@@ -20,8 +20,6 @@ function SyncProtocol (syncRoot, model, firebaseref) {
     model.prototype.listFirebaseSource = listFirebaseSource;
     model.prototype.addSourceToWebhook = addSourceToWebhook;
     model.prototype.addInSourceBool = addInSourceBool;
-    model.prototype.addToSearchIndex = addToSearchIndex;
-    model.prototype.removeFromSearchIndex = removeFromSearchIndex;
 
     // Resolve relationship pipeline - Start
     model.prototype.rrListWebhookWithRelationshipsToResolve =
@@ -300,7 +298,7 @@ function addSourceToWebhook () {
             if (error) {
                 stream.emit('error', error);
             }
-            row.whKey = ref.key();
+            row.whKey = ref.key;
             row.webhook = value;
             next(null, row);
         }
@@ -425,58 +423,6 @@ function updateWebhookValueNotInSource () {
         }
     }
 }
-
-
-/**
- * `addToSearchIndex` runs after `addSourceToWebHook`
- * with the current row = { whKey, srcKey, webhook, source }
- * 
- * @param {function} searchAddIndex Function to add to
- *                                  search index
- * @return through.obj stream
- */
-function addToSearchIndex (searchAddIndex) {
-    var self = this;
-
-    return through.obj(addToSearch);
-
-    function addToSearch (row, enc, next) {
-        var typeName = self.webhookContentType
-        var document = row.webhook
-        var id       = row.whKey
-        var oneOff   = false
-
-        searchAddIndex(typeName, document, id, oneOff, function () {
-            next(null, row);
-        });
-    }
-}
-
-/**
- * `removeFromSearchIndex` occurs after
- * `updateWebhookValueNotInSource`, and only
- * operates on values that trickle through,
- * values not in the source
- *
- * 
- * @param {function} searchDeleteIndex Function to delete
- *                                     from search index
- * @return through.obj stream
- */
-function removeFromSearchIndex (searchDeleteIndex) {
-    var self = this;
-    return through.obj(removeFromSearch);
-
-    function removeFromSearch (row, enc, next) {
-        var typeName = self.webhookContentType;
-        var id       = row.whKey;
-
-        searchDeleteIndex(typeName, id, function () {
-            next(null, row);
-        });
-    }
-}
-
 
 /* relationship resolution - rr */
 
