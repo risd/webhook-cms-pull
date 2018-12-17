@@ -24,7 +24,6 @@ module.exports = FirebaseRef;
  */
 
 function FirebaseRef ( options, callback ) {
-
   var firebaseName = options.firebaseName
   var firebaseServiceAccountKey = options.firebaseServiceAccountKey
   var initializationName = options.initializationName || '[DEFAULT]'
@@ -35,7 +34,7 @@ function FirebaseRef ( options, callback ) {
   if ( ! app ) {
     app = admin.initializeApp( {
       databaseURL: 'https://' + firebaseName + '.firebaseio.com',
-      credential: firebaseServiceAccountKey,
+      credential: admin.credential.cert( firebaseServiceAccountKey ),
     } , initializationName )
   }
 
@@ -49,7 +48,7 @@ function FirebaseRef ( options, callback ) {
     return callback( null, firebaseRef )
   }
 
-  var stream = throuhg.obj()
+  var stream = through.obj()
 
   process.nextTick( function pushRef () {
     stream.push( firebaseRef )
