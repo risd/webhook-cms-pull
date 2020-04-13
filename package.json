@@ -4,7 +4,7 @@
   "description": "Pull data from external sources into a Webhook CMS Firebase.",
   "main": "sync.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tape test/*.js"
   },
   "engines": {
     "node": "4.8.x",
@@ -24,6 +24,12 @@
     "pump": "^3.0.0",
     "run-parallel-limit": "^1.0.5",
     "stream-combiner2": "^1.1.1",
-    "through2": "^2.0.3"
+    "through2": "^2.0.3",
+    "xml-stream": "^0.4.5"
+  },
+  "devDependencies": {
+    "dotenv-safe": "^4.0.4",
+    "mississippi": "^4.0.0",
+    "tape": "^4.13.2"
   }
 }
