@@ -13,25 +13,33 @@ var test = require( 'tape' )
 
 var firebase;
 
-// set data to known start state
-test( 'set initial data', function ( t ) {
-  t.plan( 3 )
+function getFirebaseRef ( t ) {
+  t.plan( 1 )
 
   Firebaseref( envConf.firebase, function ( error, fbref ) {
     t.assert( error === null, 'Acquired firebase reference without error' )
 
     firebase = fbref;
-
-    var initialData = require( path.join( __dirname, 'data', '00-initial-data.json' ) )
-
-    t.assert( typeof initialData === 'object', 'Initial data is an object.' )
-
-    firebase.child( 'data' ).set( initialData )
-      .then( function () {
-        t.ok( 'initial data was set' )
-      } )
   } )
-} )
+}
+
+test( 'get firebase ref', getFirebaseRef )
+
+// set data to known start state
+function setInitialData ( t ) {
+  t.plan( 2 )
+
+  var initialData = require( path.join( __dirname, 'data', '00-initial-data.json' ) )
+
+  t.assert( typeof initialData === 'object', 'Initial data is an object.' )
+
+  firebase.child( 'data' ).set( initialData )
+    .then( function () {
+      t.ok( 'initial data was set' )
+    } )
+}
+
+test( 'set initial data', setInitialData )
 
 function syncCoursesTest ( fsSource ) {
   return function ( t ) {
@@ -63,7 +71,7 @@ test( 'inspect data after first sync', function ( t ) {
     var data = dataSnapshot.val()
 
     t.assert(
-      data.employees[ '--employee-key' ]
+      data.employees[ '--employee-key-1' ]
       .courses_related_employees.length === 1,
       'Employee has a single course'
     )
@@ -82,8 +90,8 @@ test( 'inspect data after second sync', function ( t ) {
     var data = dataSnapshot.val()
 
     t.assert(
-      data.employees[ '--employee-key' ]
-      .courses_related_employees.length === 0,
+      data.employees[ '--employee-key-1' ]
+      .courses_related_employees === "",
       'Employee has no courses course'
     )
   } )

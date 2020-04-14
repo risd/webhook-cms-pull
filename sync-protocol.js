@@ -7,6 +7,7 @@ var clone = require('clone');
 var from = require('from2-array');
 var through = require('through2');
 var combine = require('stream-combiner2');
+var pump = require('pump')
 var whRequiredFields = require( './util/wh-required-fields.js' )
 
 module.exports = SyncProtocol;
@@ -52,6 +53,7 @@ function SyncProtocol (syncRoot, model, firebaseref) {
     model.prototype.rrrAddData = rrrAddData;
     model.prototype.rrrFormatData = rrrFormatData;
     model.prototype.rrrSave = rrrSave;
+    model.prototype.rrrResetUnsetValue = rrrResetUnsetValue;
     
     // Resolve reverse relationship pipeline - End
 
@@ -1094,22 +1096,22 @@ function rrrAddData () {
         row.reverseContentTypeCollection = false;
         row.reverseContentTypeItem = false;
 
-        // debug('\n\nreverse data');
-        // debug(row.toResolve.relateToContentType);
-
+        debug('reverse data');
+        debug(row.toResolve.relateToContentType);
+        
         self._firebase
             .reverse
             .child(row.toResolve.relateToContentType)
             .once('value', function (snapshot) {
                 var value = snapshot.val();
+                debug('checking reverse value')
+                debug(value)
                 if (value) {
                     if (row.toResolve.multipleToRelate) {
-                        // debug('reverseContentTypeCollection');
-                        // debug(value);
+                        debug('reverseContentTypeCollection');
                         row.reverseContentTypeCollection = value;
                     } else {
-                        // debug('reverseContentTypeItem');
-                        // debug(value);
+                        debug('reverseContentTypeItem');
                         row.reverseContentTypeItem = value;
                     }
                 }
@@ -1178,29 +1180,30 @@ function rrrFormatData () {
             });
         }
 
-        this.push(toSave);
+        stream.push(toSave);
         next();
     }
 }
 
 function rrrSave () {
     var self = this;
+    var saved = []
 
-    return through.obj(save);
+    return through.obj(save, pushSaved);
 
     function save (toSave, enc, next) {
         var stream = this;
         var saverCount = toSave.length;
 
+        debug('to save');
+        debug(toSave);
+
         if (saverCount > 0) {
-            // debug('to save');
-            // debug(toSave);
             toSave
                 .map(saver)
                 .map(watcher);
         } else {
-            this.push({});
-            next();
+            pushSaved( next );
         }
 
         function saver (d) {
@@ -1234,15 +1237,182 @@ function rrrSave () {
             s.on('end', function () {
                 saverCount -= 1;
                 if (saverCount === 0) {
-                    done();
+                    saverDone();
                 }
             });
         }
 
-        function done () {
+        function saverDone () {
             debug('rrr resolved');
             debug(toSave);
+            saved = saved.concat(toSave)
             next();
+        }
+    }
+
+    function pushSaved ( next ) {
+        debug('saved to push')
+        debug(saved)
+        next( null, saved )
+    }
+}
+
+function rrrResetUnsetValue () {
+    var self = this;
+
+    return through.obj( saveUnsetValues )
+
+    // saved : { contentType, contentTypeKey?, reverseKey, reverseValue }
+    function saveUnsetValues ( saved, enc, next ) {
+        debug( 'saved to use for unsetting non-saved' )
+        debug( saved )
+        // account for content types and fields saved
+        // savedContentTypeReverseKeyPairs : { contentType, reverseKey, isMultiple }
+        var savedContentTypeReverseKeyPairs = saved.reduce( function ( previous, current ) {
+            var addContentTypeReverseKeyPair = true;
+            previous.forEach( function ( contentTypeReverseKeyPair ) {
+                if ( contentTypeReverseKeyPair.contentType === current.contentType &&
+                     contentTypeReverseKeyPair.reverseKey === current.reverseKey ) {
+                    addContentTypeReverseKeyPair = false;
+                }
+            } )
+            if ( addContentTypeReverseKeyPair ) {
+                previous = previous.concat( [ {
+                    contentType: current.contentType,
+                    reverseKey: current.reverseKey,
+                    isMultiple: current.contentTypeKey ? true : false,
+                } ] )
+            }
+            return previous
+        }, [] )
+        
+        debug( 'content types + reverse key pairs to unset values for' )
+        debug( savedContentTypeReverseKeyPairs )
+
+        var savedContentTypesCount = savedContentTypeReverseKeyPairs.length;
+
+        // download content types
+        if ( savedContentTypesCount === 0 ) {
+            next()
+        }
+        else {
+            // next()
+            pump(
+                feedContentTypes(),
+                compareSnapshot(),
+                saveUnset(),
+                saveComplete)
+        }
+
+        function feedContentTypes () {
+            var stream = through.obj();
+
+            savedContentTypeReverseKeyPairs.forEach( function ( savedContentTypeReverseKeyPair ) {
+                process.nextTick( function () {
+                    stream.push( savedContentTypeReverseKeyPair )
+                } )
+            } )
+
+            process.nextTick( function () {
+                stream.push( null )
+            } )
+
+            return stream;
+        }
+
+        function compareSnapshot () {
+            // remove data from content type with keys that were already saved    
+            return through.obj( comparer )
+
+            function comparer ( savedContentTypeReverseKeyPair, enc, next ) {
+                var stream = this;
+
+                debug( 'compare savedContentTypeReverseKeyPair' )
+                debug( savedContentTypeReverseKeyPair )
+
+                self._firebase.webhookDataRoot
+                    .child( savedContentTypeReverseKeyPair.contentType )
+                    .once( 'value', function ( contentTypeSnapshot ) {
+
+                        var contentTypeData = contentTypeSnapshot.val()
+                        if ( savedContentTypeReverseKeyPair.isMultiple ) {
+                            // remove keys that have already been set from the contentTypeData
+                            Object.keys( contentTypeData ).forEach( function ( contentTypeKey ) {
+                                var keyHasBeenSet = false;
+                                saved.forEach( function ( savedSpec ) {
+                                    if ( savedSpec.contentType === savedContentTypeReverseKeyPair.contentType &&
+                                         savedSpec.contentTypeKey === contentTypeKey ) {
+                                        keyHasBeenSet = true;
+                                    }
+                                } )
+
+                                if ( keyHasBeenSet === true ) {
+                                    delete contentTypeData[ contentTypeKey ]
+                                }
+                            } )
+                            Object.keys( contentTypeData ).forEach( function ( contentTypeKey ) {
+                                process.nextTick( function () {
+                                    stream.push( {
+                                        contentType: savedContentTypeReverseKeyPair.contentType,
+                                        contentTypeKey: contentTypeKey,
+                                        reverseKey: savedContentTypeReverseKeyPair.reverseKey,
+                                        reverseValue: "",
+                                    } )
+                                } )
+                            } )
+                        }
+                        else {
+                            // see if key has been set for the one-off contentType
+                            var keyHasBeenSet = false;
+                            saved.forEach( function ( savedSpec ) {
+                                if ( savedSpec.contentType === savedContentTypeReverseKeyPair.contentType ) {
+                                    keyHasBeenSet = true;
+                                }
+                            } )
+
+                            if ( keyHasBeenSet === false ) {
+                                process.nextTick( function () {
+                                    stream.push( {
+                                        contentType: savedContentTypeReverseKeyPair.contentType,
+                                        reverseKey: savedContentTypeReverseKeyPair.reverseKey,
+                                        reverseValue: "",
+                                    } )
+                                } )
+                            }
+                        }
+
+                        process.nextTick( function () {
+                            next()    
+                        } )
+                    } )
+            }
+        }
+
+        function saveUnset () {
+            return through.obj( saveUnsetSpec )
+
+            // unsetSpec: { contentType, contentTypeKey?, reverseKey, reverseValue }
+            function saveUnsetSpec ( unsetSpec, enc, next ) {
+                debug( 'unsetSpec' )
+                debug( unsetSpec )
+
+                var unsetRef = self._firebase.webhookDataRoot
+                    .child( unsetSpec.contentType )
+
+                if ( unsetSpec.contentTypeKey ) {
+                    unsetRef = unsetRef.child( unsetSpec.contentTypeKey )
+                }
+
+                unsetRef.child( unsetSpec.reverseKey )
+                    .set( unsetSpec.reverseValue, function () {
+                        next()
+                    } )
+            }
+        }
+
+        function saveComplete ( error ) {
+            if ( error ) return next( error )
+            next()
         }
     }
 }

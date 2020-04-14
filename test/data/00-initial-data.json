@@ -1,8 +1,11 @@
 {
   "courses": {},
   "employees": {
-    "--employee-key": {
+    "--employee-key-1": {
       "colleague_id": "0177244"
+    },
+    "--employee-key-2": {
+      "colleague_id": "0123456"
     }
   }
 }

@@ -353,12 +353,14 @@ function Sync ( options, callback ) {
           ('rrrListRelationshipsToResolve' in source) &&
           ('rrrAddData' in source) &&
           ('rrrFormatData' in source) &&
-          ('rrrSave' in source)) {
+          ('rrrSave' in source) &&
+          ('rrrResetUnsetValue' in source)) {
         pump(
           source.rrrListRelationshipsToResolve(),
           source.rrrAddData(),
           source.rrrFormatData(),
           source.rrrSave(),
+          source.rrrResetUnsetValue(),
           end);
       }
       else {
