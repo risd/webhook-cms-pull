@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='iso-8859-1' ?>
+<!--
+Data for a course with non-existent employee as faculty.
+This should set the reverse relationship on the employee to be re-set
+-->
+<ROOT>
+<DEPARTMENT>
+ <NAME>APPAREL DESIGN</NAME>
+  <COURSE>
+   <COURSESYNONYM>26026</COURSESYNONYM>
+   <COURSENAME>LAEL-1035-01</COURSENAME>
+   <COURSETITLE>HISTORY OF DRESS</COURSETITLE>
+   <COURSEDESC>This class examines fashion in Europe and America from the eighteenth century to the present, covering the industrial revolution through the development of couture and postmodern fashion. It analyzes clothing as a social and cultural artifact, central to the construction of group and individual identity. Lectures and readings explore the production, consumption, use and meanings of dress, and will be supplemented by visits to the RISD museum. Course work will be comprised of group and independent research, written papers, and oral presentations.  &lt;BR&gt; &lt;I&gt; Major requirement; Apparel Design sophomores &lt;BR&gt; Art History credit for Apparel Design majors &lt;BR&gt; Liberal Arts elective credit for non-majors pending seat availability and permission of Instructor. &lt;BR&gt; Registration by Apparel Design Department, course not available via web registration. &lt;/I&gt;</COURSEDESC>
+   <COURSETERM>2019FA</COURSETERM>
+   <COURSECREDITS>3.00</COURSECREDITS>
+   <COURSEACADEMICLEVEL>UG</COURSEACADEMICLEVEL>
+   <COURSEFACULTY>0123456</COURSEFACULTY>
+  </COURSE>
+</DEPARTMENT>
+</ROOT>
