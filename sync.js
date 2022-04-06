@@ -22,10 +22,6 @@ module.exports = Sync;
  * @param {object}   options.env.signal.payload  Base object to extend when submitting a server signal
  * @param {string}   options.env.signal.payload.userid  User responsible for the signal
  * @param {string}   options.env.signal.payload.sitename  Signal for a the given site name
- * @param {object}   options.env.aws  AWS environment configuration
- * @param {string}   options.env.aws.key  AWS key
- * @param {string}   options.env.aws.secret  AWS secret
- * @param {string}   options.env.aws.bucket  AWS bucket to report sync progress to
  * @param {Function} callback  Function called upon sync completion
  */
 function Sync ( options, callback ) {
@@ -49,7 +45,6 @@ function Sync ( options, callback ) {
 
   var SignalBuild = require( './signal/build.js' ).stream();
   var SignalReindex = require( './signal/elastic-reindex.js' ).stream();
-  var Report = require('./report/index.js')( envConf.report );
 
   var syncRoot = timestampWithPrefix( syncNode );
 
@@ -60,7 +55,6 @@ function Sync ( options, callback ) {
     .pipe(AddSyncNodeToFirebase(syncRoot))
     .pipe(SignalBuild.config())
     .pipe(SignalReindex.config())
-    .pipe(Report.config())
     // < Reads a firebase ref
     // > Writes individual SyncSources with sync protocol applied
     .pipe(ApplySyncProtocolToSources(syncRoot, sourcePrototypes))
@@ -71,7 +65,6 @@ function Sync ( options, callback ) {
     .pipe(RemoveFromWebhookBasedOnSource())
     .pipe(ResolveRelationships())
     .pipe(ResolveReverseRelationships())
-    .pipe(Report.update())
     .pipe(SignalBuild.send( envConf.signal ))
     .pipe(SignalReindex.send( envConf.signal ))
     // < Reads SyncSources

@@ -1,24 +1,22 @@
 {
   "name": "webhook-cms-pull",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "description": "Pull data from external sources into a Webhook CMS Firebase.",
   "main": "sync.js",
   "scripts": {
     "test": "tape test/*.js"
   },
   "engines": {
-    "node": "4.8.x",
-    "npm": "2.15.x"
+    "node": "16.4.2",
+    "npm": "7.18.1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "clone": "^1.0.2",
     "debug": "^3.1.0",
-    "firebase-admin": "^6.4.0",
+    "firebase-admin": "^10.0.2",
     "from2-array": "0.0.4",
-    "html-template": "^1.2.2",
-    "knox": "^0.9.2",
     "moment": "^2.9.0",
     "moment-timezone": "^0.4.0",
     "pump": "^3.0.0",
@@ -29,7 +27,7 @@
   "devDependencies": {
     "dotenv-safe": "^4.0.4",
     "mississippi": "^4.0.0",
-    "tape": "^4.13.2",
+    "tape": "^5.5.2",
     "xml-stream": "^0.4.5"
   }
 }
