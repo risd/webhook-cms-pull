@@ -5,11 +5,9 @@ var firebaseEscape = require( '../util/firebase-escape.js' )
 
 module.exports = Signal;
 
-function Signal( type ) {
-  if ( ! ( this instanceof Signal ) ) return new Signal( type )
-  assert( typeof type === 'string', 'Signal expects a string telling the type of signal to send.' )
-
-  var signalType = type;
+function Signal( signalType ) {
+  if ( ! ( this instanceof Signal ) ) return new Signal( signalType )
+  assert( typeof signalType === 'string', 'Signal expects a string telling the type of signal to send.' )
   
   return function SendSignal ( options, callback ) {
     if ( ! ( this instanceof SendSignal ) ) return new SendSignal( options, callback )

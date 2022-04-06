@@ -12,12 +12,6 @@ module.exports = Env;
  * SITE_NAME
  * FIREBASE_NAME
  * FIREBASE_KEY
- * AWS_KEY
- * AWS_SECRET
- * AWS_BUCKET
- * REPORT_BUCKET
- * REPORT_REGION
- * REPORT_FIREBASE_PATH
  * 
  * @param {object} options Defaults to process.env
  * @returns {object}   interface
@@ -52,28 +46,14 @@ function Env ( options ) {
     },
     signal: {
       payload: {
-        userid: 'mgdevelopers@risd.edu',
+        userid: environment.SITE_USER,
         sitename: environment.SITE_NAME,
       },
-    },
-    aws: {
-      key: environment.AWS_KEY,
-      secret: environment.AWS_SECRET,
-      bucket: environment.AWS_BUCKET,
-    },
-    report: {
-      awsBucket: environment.REPORT_BUCKET,
-      awsRegion: environment.REPORT_REGION,
-      firebasePath: environment.REPORT_FIREBASE_PATH,
-      awsKey: environment.AWS_KEY,
-      awsSecret: environment.AWS_SECRET,
     },
   }
 
   debug( configuration.firebase )
   debug( configuration.build )
-  debug( configuration.aws )
-  debug( configuration.report )
 
   return {
     asObject: extendConfiguration,
