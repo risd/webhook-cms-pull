@@ -18,7 +18,7 @@
     "firebase-admin": "^10.0.2",
     "from2-array": "0.0.4",
     "moment": "^2.9.0",
-    "moment-timezone": "^0.4.0",
+    "moment-timezone": "^0.5.35",
     "pump": "^3.0.0",
     "run-parallel-limit": "^1.0.5",
     "stream-combiner2": "^1.1.1",
